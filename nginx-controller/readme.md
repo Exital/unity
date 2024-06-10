@@ -26,7 +26,7 @@ Navigate to the extracted chart directory and install the Custom Resource Defini
 
 ```bash
 cd nginx-ingress
-kubectl apply -f crds --namespace nginx-ingress
+kubectl apply -f crds
 ```
 
 ### 4. Install NGINX Ingress Controller
