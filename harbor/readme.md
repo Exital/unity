@@ -8,6 +8,7 @@ Before installing Harbor, you need to set up the following prerequisites:
 
 - TLS Secret: Configure a TLS sealed secret in your Kubernetes cluster.
 - NFS provisioner: To ensure data persistence in Harbor, you need a persistent volume provisioner.
+- Sealed Secrets installed.
 
 ## Steps
 
