@@ -1,0 +1,40 @@
+expose:
+  type: ingress
+  tls:
+    enabled: true
+    secret:
+      secretName: "cloudflare-tls"
+  ingress:
+    hosts:
+      core: harbor.talrozen.com
+    controller: nginx-ingress-controller
+    className: "nginx"
+    annotations:
+      nginx.org/client-max-body-size: "0m"
+externalURL: https://harbor.talrozen.com
+persistence:
+  enabled: true
+  persistentVolumeClaim:
+    registry:
+      storageClass: "nfs-client"
+      subPath: "harbor"
+      size: 100Gi
+    jobservice:
+      jobLog:
+        storageClass: "nfs-client"
+        subPath: "harbor"
+        size: 5Gi
+    database:
+      storageClass: "nfs-client"
+      subPath: "harbor"
+      size: 5Gi
+    redis:
+      storageClass: "nfs-client"
+      subPath: "harbor"
+      size: 5Gi
+    trivy:
+      storageClass: "nfs-client"
+      subPath: "harbor"
+      size: 5Gi
+existingSecretAdminPassword: harbor-admin-secret
+existingSecretAdminPasswordKey: HARBOR_ADMIN_PASSWORD
