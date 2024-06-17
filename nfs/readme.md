@@ -29,7 +29,7 @@ Set appropriate permissions for the directory:
 
 ```bash
 sudo chown nobody:nogroup /nfs
-sudo chmod 755 /nfs` 
+sudo chmod 755 /nfs
 ```
 ### 3. Export the Shared Directory
 
