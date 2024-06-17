@@ -91,3 +91,7 @@ persistence:
 existingSecretAdminPassword: <your-admin-secret-name>
 existingSecretAdminPasswordKey: <your-admin-secret-password-key-in-the-file> # in that example: HARBOR_ADMIN_PASSWORD
 ```
+
+```bash
+helm install harbor harbor/harbor --namespace harbor --values harbor-values.yml
+```
