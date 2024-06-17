@@ -26,4 +26,11 @@ sudo install -m 755 kubeseal /usr/local/bin/kubeseal
 ```
 >where `KUBESEAL_VERSION` is the [version tag](https://github.com/bitnami-labs/sealed-secrets/tags) of the kubeseal release you want to use. For example: 0.23.0.
 
-## usage (TBD)
+## usage
+### 1. encoding k8s secret into sealed secret
+To encode this Kubernetes Secret into a Sealed Secret, use the kubeseal CLI:
+```bash
+kubeseal --format yaml < secret.yaml > sealedsecret.yaml
+```
+### 2. decoding sealed secret
+To decode a Sealed Secret back into a Kubernetes Secret, you can apply the Sealed Secret to your Kubernetes cluster. The Sealed Secrets controller will automatically decrypt it and create a Kubernetes Secret.
