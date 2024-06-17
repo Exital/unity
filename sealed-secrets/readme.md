@@ -34,3 +34,8 @@ kubeseal --format yaml < secret.yaml > sealedsecret.yaml
 ```
 ### 2. decoding sealed secret
 To decode a Sealed Secret back into a Kubernetes Secret, you can apply the Sealed Secret to your Kubernetes cluster. The Sealed Secrets controller will automatically decrypt it and create a Kubernetes Secret.
+### 3. deleting sealed secret
+Deleting the Sealed Secret will automatically delete the corresponding Kubernetes Secret that contains the decrypted sensitive data.
+```bash
+kubectl delete sealedsecrets <mysecret>
+```
