@@ -1,4 +1,4 @@
-# Installing Jenkins on Kubernetes using Helm
+# Installing [Jenkins](https://www.jenkins.io) on Kubernetes using Helm
 
 Jenkins is an open-source automation server widely used for continuous integration and continuous delivery (CI/CD) pipelines. 
 It helps automate the software development processes including building, testing, and deploying applications. 
@@ -21,7 +21,7 @@ Before you begin, ensure you have the following prerequisites set up:
 
 ### Step 1: Add Jenkins Helm Repository
 
-Add the official Jenkins Helm repository to Helm:
+Add the [official Jenkins Helm repository](https://github.com/jenkinsci/helm-charts) to Helm:
 
 ```bash
 helm repo add jenkins https://charts.jenkins.io
