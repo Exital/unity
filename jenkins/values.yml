@@ -1,7 +1,7 @@
 controller:
-  adminSecret:
-    name: "jenkins-admin-secret"
-    key: "jenkins-admin-password"
+  admin:
+    existingSecret: "jenkins-admin-secret"
+    passwordKey: "jenkins-admin-password"
 
   installPlugins:
     - kubernetes:4029.v5712230ccb_f8
