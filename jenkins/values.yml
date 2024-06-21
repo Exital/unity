@@ -25,6 +25,6 @@ controller:
         hosts:
           - jenkins.talrozen.com
 
-  persistence:
-    enabled: true
-    storageClass: "nfs-client"
+persistence:
+  enabled: true
+  storageClass: "nfs-client"
