@@ -41,6 +41,7 @@ Use `kubeseal` to seal the secret and apply using `kubectl`.
 kubeseal --format yaml < cloudflare-tls.yml > sealed-cloudflare-tls.yml
 kubectl apply -f sealed-cloudflare-tls.yml
 ```
+>**Caution: Sealed Secrets encryption encodes the namespace as well, preventing them from being transferred between namespaces.**
 
 ### 5. you may now use the TLS secret with ingress
 Use the TLS secret with ingress to have secure connetion when hosting.
