@@ -132,6 +132,9 @@ helm repo add nfs-subdir-external-provisioner https://kubernetes-sigs.github.io/
 ```bash
 helm install nfs-subdir-external-provisioner nfs-subdir-external-provisioner/nfs-subdir-external-provisioner \
     --set nfs.server=x.x.x.x \
-    --set nfs.path=/nfs
+    --set nfs.path=/nfs \
+    --set storageClass.defaultClass=true \
+    --set storageClass.name=nfs-client
 ```
 > replace x.x.x.x with your nfs server ip.
+> nfs.path is where the actual PV data will be saved.
