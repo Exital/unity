@@ -12,7 +12,7 @@ Security: Use Kubernetes secrets to securely store sensitive Cloudflare credenti
 ## Kubernetes Objects Used
 1. **Secrets:** Kubernetes secrets are used to store sensitive information such as Cloudflare credentials (auth_email, auth_key, etc.) securely.
 
-2. **ConfigMap:** A ConfigMap is used to store the bash script (ddns-update.sh) that interacts with Cloudflare API and performs DNS updates.
+2. **ConfigMap:** A ConfigMap is used to store the bash script (ddns-update.py) that interacts with Cloudflare API and performs DNS updates.
 
 3. **CronJob:** The CronJob object is configured to run the ddns-update.sh script at specified intervals (schedule: "*/5 * * * *" in this example) to ensure DNS records are regularly updated.
 
