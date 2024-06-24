@@ -1,0 +1,37 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: cloudflare-ddns-cronjob
+  namespace: cloudflare-ddns
+spec:
+  schedule: "*/5 * * * *"  # Cron schedule (runs every 5 minutes in this example)
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: cloudflare-ddns-container
+            image: python:3-slim
+            command:
+              - sh
+              - -c
+              - |
+                cp /bin/ddns-update.py /tmp/ddns-update.py && \
+                chmod +x /tmp/ddns-update.py && \
+                pip install requests && \
+                python /tmp/ddns-update.py
+            volumeMounts:
+            - name: script-volume
+              mountPath: /bin/ddns-update.py
+              subPath: ddns-update.py
+              readOnly: true
+            envFrom:
+            - secretRef:
+                name: cloudflare-ddns-secrets
+          restartPolicy: OnFailure
+          volumes:
+          - name: script-volume
+            configMap:
+              name: ddns-update-script
