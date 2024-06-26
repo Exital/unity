@@ -28,3 +28,26 @@ controller:
 persistence:
   enabled: true
   storageClass: "nfs-client"
+
+agent:
+  podTemplates:
+    k8sWithDocker: |
+      - name: k8swithdocker
+        label: K8S-With-Docker
+        serviceAccount: default
+        containers:
+          - name: jnlp
+            image: harbor.talrozen.com/jenkins/docker-agent:1.0.0
+            envVars:
+              - envVar:
+                  key: "JENKINS_URL"
+                  value: "http://jenkins.jenkins.svc.cluster.local:8080/"
+        namespace: jenkins
+        volumes:
+          - hostPathVolume:
+              hostPath: "/var/run/docker.sock"
+              mountPath: "/var/run/docker.sock"
+        podRetention: "Never"
+        slaveConnectTimeout: 100
+        imagePullSecrets:
+          - name: "agent-pull-secret"
