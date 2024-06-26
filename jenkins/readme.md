@@ -66,3 +66,153 @@ persistence:
   enabled: true
   storageClass: "nfs-client"
 ```
+
+## Configuring K8S Docker Agent
+
+In order to configure our Jenkins builds to run on Docker containers using our own images and templates, we first need to build and push an agent Docker image to our Harbor instance. Once the image is available in Harbor, we can configure different pod templates in the `jenkins-values.yml` file for Jenkins.
+
+### Step 1: Build and Push Docker Image
+
+1. **Create a Dockerfile for your Jenkins agent:**
+
+   ```dockerfile
+   # Use an official Jenkins JNLP slave image
+   FROM jenkins/inbound-agent:latest
+   
+   # Switch to root user for installation
+   USER root
+   
+   # Install necessary tools
+   RUN apt-get update && apt-get install -y \
+    apt-transport-https \
+    ca-certificates \
+    curl \
+    gnupg2 \
+    software-properties-common
+   
+   # Install Docker
+   RUN curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+   RUN echo "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+   RUN apt-get update && apt-get install -y docker-ce-cli
+   
+   # Install Docker Compose
+   RUN curl -L "https://github.com/docker/compose/releases/download/1.25.3/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose \
+    && chmod +x /usr/local/bin/docker-compose
+   
+   USER jenkins
+   ```
+
+2. **Build the Docker image:**
+
+    ```sh
+    docker build -f <Dockerfile.agent> -t <harbor_url>/<harbor_project>/<harbor_repo>:<tag>
+    ```
+
+3. **Log in to your Harbor instance:**
+
+    ```sh
+    docker login <harbor_url>
+    ```
+
+4. **Push the Docker image to Harbor:**
+
+    ```sh
+    docker push <harbor_url>/<harbor_project>/<harbor_repo>:<tag>
+    ```
+
+### Step 2: Configure Jenkins Agent Pull Secret
+
+The agent pull secret is needed to allow the Jenkins agent pods to pull images from a private Docker registry.
+
+1. **Create a Docker Registry Secret in the Jenkins Namespace:**
+
+    Use the following command to create a Docker registry secret in the `jenkins` namespace:
+
+    ```sh
+    kubectl create secret docker-registry agent-pull-secret \
+      --docker-server=<your-registry-server> \
+      --docker-username=<your-username> \
+      --docker-password=<your-password> \
+      --namespace=jenkins
+    ```
+
+    Replace `<your-registry-server>`, `<your-username>` and `<your-password>` with your actual Docker registry credentials.
+
+2. **Export the Secret to a YAML File:**
+
+    To export the created secret to a YAML file, use the following command:
+
+    ```sh
+    kubectl get secret agent-pull-secret --namespace=jenkins -o yaml > agent-pull-secret.yaml
+    ```
+
+    This command retrieves the `agent-pull-secret` secret from the `jenkins` namespace and saves it to a file named `agent-pull-secret.yaml`.
+   
+3. **Seal the secret with kubeseal:**
+   ```bash
+   kubeseal --format yaml < agent-pull-secret.yaml > agent-pull-sealed-secret.yaml
+   ```
+
+By following these steps, you create a pull secret that Jenkins agents can use to authenticate with the private Docker registry and pull the necessary images.
+
+
+### Step 3.: Configure Jenkins Pod Template
+
+1. **Edit your Jenkins Helm values file (`jenkins-values.yml`):**
+
+    ```yaml
+    agent:
+      podTemplates:
+        k8sWithDocker: | # arbitrary identifier for the pod template group
+          - name: k8swithdocker # your pod template name
+            label: K8S-With-Docker # agent labels (space delimeted for multiple)
+            serviceAccount: default
+            containers:
+              - name: jnlp
+                image: <harbor_url>/<harbor_project>/<harbor_repo>:<tag>
+                envVars:
+                  - envVar:
+                      key: "JENKINS_URL"
+                      value: "http://jenkins.jenkins.svc.cluster.local:8080/"
+            namespace: jenkins
+            volumes:
+              - hostPathVolume:
+                  hostPath: "/var/run/docker.sock"
+                  mountPath: "/var/run/docker.sock"
+            podRetention: "OnFailure"
+            slaveConnectTimeout: 100
+            imagePullSecrets:
+              - name: "agent-pull-secret"
+    ```
+
+2. **Apply the updated Helm chart:**
+
+    ```sh
+    helm upgrade jenkins -f jenkins-values.yml
+    ```
+
+### Step 3: Create a Jenkins Pipeline
+
+1. **Create a new Jenkins Pipeline job:**
+
+2. **Define the pipeline script:**
+
+    ```groovy
+    pipeline {
+        agent {
+            label 'K8S-With-Docker'
+        }
+        stages {
+            stage('Hello World') {
+                steps {
+                    echo 'Hello World'
+                }
+            }
+        }
+    }
+    ```
+
+3. **Save and run the pipeline.**
+
+By following these steps, you'll be able to configure your Jenkins instance to use custom Docker agents running in Kubernetes. The agents will be based on the images you push to your Harbor instance, and you can easily define and manage different pod templates in your Jenkins Helm values file.
+
