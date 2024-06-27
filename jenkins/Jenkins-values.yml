@@ -37,7 +37,7 @@ agent:
         serviceAccount: default
         containers:
           - name: jnlp
-            image: harbor.talrozen.com/jenkins/docker-agent:1.0.0
+            image: harbor.talrozen.com/jenkins/docker-agent:1.0.1
             envVars:
               - envVar:
                   key: "JENKINS_URL"
@@ -47,6 +47,7 @@ agent:
           - hostPathVolume:
               hostPath: "/var/run/docker.sock"
               mountPath: "/var/run/docker.sock"
+        runAsUser: 1000
         podRetention: "Never"
         slaveConnectTimeout: 100
         imagePullSecrets:
