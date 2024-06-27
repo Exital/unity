@@ -71,7 +71,22 @@ persistence:
 
 In order to configure our Jenkins builds to run on Docker containers using our own images and templates, we first need to build and push an agent Docker image to our Harbor instance. Once the image is available in Harbor, we can configure different pod templates in the `jenkins-values.yml` file for Jenkins.
 
-### Step 1: Build and Push Docker Image
+### Step 1: Configure Docker Group and Docker Socket (Optional if Docker-in-Docker is Not Required)
+To enable Docker for Jenkins inside the agent Docker container, follow these steps:
+
+1. Ensure all cluster nodes have the Docker group with the same group ID (GID).
+   
+   Verify the following on each node:
+   ```bash
+   getent group docker
+   ```
+2. Configure the Docker socket (/var/run/docker.sock) with the Docker group having read and write permissions (660 permissions are recommended).
+   ```bash
+   sudo chown root:docker /var/run/docker.sock
+   sudo chmod 660 /var/run/docker.sock
+   ```
+
+### Step 2: Build and Push Docker Image
 
 1. **Create a Dockerfile for your Jenkins agent:**
 
@@ -84,11 +99,11 @@ In order to configure our Jenkins builds to run on Docker containers using our o
    
    # Install necessary tools
    RUN apt-get update && apt-get install -y \
-    apt-transport-https \
-    ca-certificates \
-    curl \
-    gnupg2 \
-    software-properties-common
+       apt-transport-https \
+       ca-certificates \
+       curl \
+       gnupg2 \
+       software-properties-common
    
    # Install Docker
    RUN curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
@@ -97,7 +112,9 @@ In order to configure our Jenkins builds to run on Docker containers using our o
    
    # Install Docker Compose
    RUN curl -L "https://github.com/docker/compose/releases/download/1.25.3/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose \
-    && chmod +x /usr/local/bin/docker-compose
+       && chmod +x /usr/local/bin/docker-compose
+   
+   RUN groupadd -g <docker group id on your cluster nodes> docker && usermod -aG docker jenkins
    
    USER jenkins
    ```
@@ -161,31 +178,40 @@ By following these steps, you create a pull secret that Jenkins agents can use t
 1. **Edit your Jenkins Helm values file (`jenkins-values.yml`):**
 
     ```yaml
-    agent:
-      podTemplates:
-        k8sWithDocker: | # arbitrary identifier for the pod template group
-          - name: k8swithdocker # your pod template name
-            label: K8S-With-Docker # agent labels (space delimeted for multiple)
-            serviceAccount: default
-            containers:
-              - name: jnlp
-                image: <harbor_url>/<harbor_project>/<harbor_repo>:<tag>
-                envVars:
-                  - envVar:
-                      key: "JENKINS_URL"
-                      value: "http://jenkins.jenkins.svc.cluster.local:8080/"
-            namespace: jenkins
-            volumes:
-              - hostPathVolume:
-                  hostPath: "/var/run/docker.sock"
-                  mountPath: "/var/run/docker.sock"
-            podRetention: "OnFailure"
-            slaveConnectTimeout: 100
-            imagePullSecrets:
-              - name: "agent-pull-secret"
+   agent:
+     podTemplates:
+       k8sWithDocker: |
+         - name: k8swithdocker
+           label: K8S-With-Docker
+           serviceAccount: default
+           containers:
+             - name: jnlp
+               image: harbor.talrozen.com/jenkins/docker-agent:1.0.1
+               envVars:
+                 - envVar:
+                     key: "JENKINS_URL"
+                     value: "http://jenkins.jenkins.svc.cluster.local:8080/"
+           namespace: jenkins
+           volumes:
+             - hostPathVolume:
+                 hostPath: "/var/run/docker.sock"
+                 mountPath: "/var/run/docker.sock"
+           runAsUser: 1000 # the user id of the jenkins user
+           podRetention: "Never"
+           slaveConnectTimeout: 100
+           imagePullSecrets:
+             - name: "agent-pull-secret"
     ```
 
-2. **Apply the updated Helm chart:**
+Check the Jenkins user ID inside the agent container image:
+
+```bash
+docker run --rm -it <harbor_url>/<harbor_project>/<harbor_repo>:<tag> /bin/bash
+id jenkins
+```
+The user ID is `uid=<user id>`, and you can also check the Docker group ID configuration you have set up.
+
+3. **Apply the updated Helm chart:**
 
     ```sh
     helm upgrade jenkins -f jenkins-values.yml
@@ -200,7 +226,7 @@ By following these steps, you create a pull secret that Jenkins agents can use t
     ```groovy
     pipeline {
         agent {
-            label 'K8S-With-Docker'
+            label 'K8S-With-Docker' # The label of the Jenkins agent configured in the pod template
         }
         stages {
             stage('Hello World') {
