@@ -36,12 +36,12 @@ helm install jenkins jenkins/jenkins -n jenkins --values jenkins-values.yml
 
 ```yaml
 controller:
-  admin: # admin user pre defined username and password
-    existingSecret: "jenkins-admin-secret" # the secret name
-    userKey: "jenkins-admin-user" # the key in the secret for the user data
-    passwordKey: "jenkins-admin-password" # the key in the secret for the password data
+  admin:
+    existingSecret: "jenkins-admin-secret"
+    userKey: "jenkins-admin-user"
+    passwordKey: "jenkins-admin-password"
   
-  installPlugins: # use this to install plugins
+  installPlugins:
     - kubernetes
     - workflow-aggregator
     - git
@@ -52,19 +52,34 @@ controller:
     - envinject
     - docker-workflow
     - generic-webhook-trigger
+    - authorize-project
     - kubernetes-credentials-provider
+
+  JCasC:
+    enabled: true
+    configScripts:
+      security-pipeline-authorization-config: |
+        security:
+          queueItemAuthenticator:
+            authenticators:
+              - project:
+                  disabledStrategies:
+                    - "org.jenkinsci.plugins.authorizeproject.strategy.SystemAuthorizationStrategy"
+                  enabledStrategies:
+                    - "org.jenkinsci.plugins.authorizeproject.strategy.SpecificUsersAuthorizationStrategy"
+                    - "org.jenkinsci.plugins.authorizeproject.strategy.TriggeringUsersAuthorizationStrategy"
+                    - "org.jenkinsci.plugins.authorizeproject.strategy.AnonymousAuthorizationStrategy"
 
   ingress:
     enabled: true
     hostName: "jenkins.talrozen.com"
     ingressClassName: nginx
     tls:
-      - secretName: cloudflare-tls # the tls secret name
+      - secretName: cloudflare-tls
         hosts:
           - jenkins.talrozen.com
 
-
-rbac: # permissions for kubernetes-credentials-provider plugin
+rbac:
   create: true
   readSecrets: true
 
