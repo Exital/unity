@@ -52,6 +52,7 @@ controller:
     - envinject
     - docker-workflow
     - generic-webhook-trigger
+    - kubernetes-credentials-provider
 
   ingress:
     enabled: true
@@ -61,6 +62,11 @@ controller:
       - secretName: cloudflare-tls # the tls secret name
         hosts:
           - jenkins.talrozen.com
+
+
+rbac: # permissions for kubernetes-credentials-provider plugin
+  create: true
+  readSecrets: true
 
 persistence:
   enabled: true
