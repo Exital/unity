@@ -52,23 +52,15 @@ controller:
     - envinject
     - docker-workflow
     - generic-webhook-trigger
-    - authorize-project
     - kubernetes-credentials-provider
 
   JCasC:
     enabled: true
     configScripts:
-      security-pipeline-authorization-config: |
+      disable-dsl-security: |
         security:
-          queueItemAuthenticator:
-            authenticators:
-              - project:
-                  disabledStrategies:
-                    - "org.jenkinsci.plugins.authorizeproject.strategy.SystemAuthorizationStrategy"
-                  enabledStrategies:
-                    - "org.jenkinsci.plugins.authorizeproject.strategy.SpecificUsersAuthorizationStrategy"
-                    - "org.jenkinsci.plugins.authorizeproject.strategy.TriggeringUsersAuthorizationStrategy"
-                    - "org.jenkinsci.plugins.authorizeproject.strategy.AnonymousAuthorizationStrategy"
+          globalJobDslSecurityConfiguration:
+            useScriptSecurity: false
 
   ingress:
     enabled: true
