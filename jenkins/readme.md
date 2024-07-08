@@ -448,7 +448,7 @@ helm upgrade <release-name> <chart-name> -f jenkins-values.yml
 * Create a secret text credential to store the token for triggering the pipeline. You can use the Jenkins credential provider and apply a Kubernetes secret.
 * Configure a webhook trigger using DSL and assign the credential ID.
 
-```yaml
+```groovy
 pipelineJob('my_pipeline'){
   properties {
     pipelineTriggers {
