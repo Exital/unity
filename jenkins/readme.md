@@ -303,3 +303,4 @@ stringData:
   username: myUsername
   password: 'Pa$$word'
 ```
+[Installing Jenkins on K8S using Helm](##Installing-Jenkins-on-Kubernetes-using-Helm)
