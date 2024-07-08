@@ -1,10 +1,16 @@
-# Installing [Jenkins](https://www.jenkins.io) on Kubernetes using Helm
+# Jenkins on K8S cluster
+
+## Table of contents:
+- [Installing Jenkins on K8S using Helm](##Installing-Jenkins-on-Kubernetes-using-Helm)
+- [Configuring K8S Docker Agent](#Configuring-K8S-Docker-Agent)
+
+## Installing [Jenkins](https://www.jenkins.io) on Kubernetes using Helm
 
 Jenkins is an open-source automation server widely used for continuous integration and continuous delivery (CI/CD) pipelines. 
 It helps automate the software development processes including building, testing, and deploying applications. 
 Jenkins enables developers to integrate changes to their projects continuously, facilitating faster feedback loops and smoother collaboration among team members.
 
-## Prerequisites
+### Prerequisites
 
 Before you begin, ensure you have the following prerequisites set up:
 
@@ -17,9 +23,9 @@ Before you begin, ensure you have the following prerequisites set up:
 3. **Persistent Volume Storage Class:**
    - Identify or create a Persistent Volume (PV) Storage Class that Jenkins can use to persist data, such as job configurations and build logs.
 
-## Installation Steps
+### Installation Steps
 
-### Step 1: Add Jenkins Helm Repository
+#### Step 1: Add Jenkins Helm Repository
 
 Add the [official Jenkins Helm repository](https://github.com/jenkinsci/helm-charts) to Helm:
 
@@ -28,7 +34,7 @@ helm repo add jenkins https://charts.jenkins.io
 helm repo update
 ```
 
-### Step 2: Create Jenkins namespace and use Helm
+#### Step 2: Create Jenkins namespace and use Helm
 ```bash
 kubectl create namespace jenkins
 helm install jenkins jenkins/jenkins -n jenkins --values jenkins-values.yml
@@ -255,3 +261,45 @@ The user ID is `uid=<user id>`, and you can also check the Docker group ID confi
 
 By following these steps, you'll be able to configure your Jenkins instance to use custom Docker agents running in Kubernetes. The agents will be based on the images you push to your Harbor instance, and you can easily define and manage different pod templates in your Jenkins Helm values file.
 
+## Configuring Kubernetes Credentials Provider
+
+### Introduction
+
+Using Kubernetes to manage Jenkins credentials provides a streamlined, secure, and efficient way to handle secrets. This approach ensures that sensitive data is stored and managed in a centralized location, reducing the risk of exposure and simplifying the maintenance of credentials. By leveraging Kubernetes secrets, Jenkins can automatically import these credentials, making them readily available for use in your pipelines without manual intervention. This setup enhances security, scalability, and ease of management for DevOps teams.
+
+### Plugin Installation and RBAC
+
+If you follow the provided Helm values, the Kubernetes Credentials Provider plugin should already be installed. If not, you can install it manually from the Jenkins plugin manager or via the [Kubernetes Credentials Provider plugin](https://plugins.jenkins.io/kubernetes-credentials-provider/).
+
+To ensure proper functioning, you need to set up the appropriate Role-Based Access Control (RBAC) and service account configurations. If you are using the Helm values provided in this documentation, this RBAC setup is already automated and configured for you.
+> jenkins-values.yml
+```yaml
+rbac:
+  create: true
+  readSecrets: true
+```
+
+
+### usage
+Once the Kubernetes Credentials Provider plugin is installed, you can create secrets in Kubernetes, and these will be automatically imported into Jenkins as credentials. You can use these credentials in your Jenkins jobs just like any other Jenkins credentials.
+You can find [additional examples](https://jenkinsci.github.io/kubernetes-credentials-provider-plugin/examples/) and detailed documentation on the plugin's [official documentation](https://jenkinsci.github.io/kubernetes-credentials-provider-plugin/) page and examples section.
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+# this is the jenkins credential id.
+  name: "another-test-usernamepass"
+  labels:
+# so we know what type it is.
+    "jenkins.io/credentials-type": "usernamePassword"
+  annotations:
+# description - can not be a label as spaces are not allowed
+    "jenkins.io/credentials-description" : "credentials from Kubernetes"
+# folder/job scope - optional
+    jenkins.io/credentials-store-locations: "['thisIsJobA', 'thisIsJobB', 'thisIsFolderA/thisIsJobC']"
+type: Opaque
+stringData:
+  username: myUsername
+  password: 'Pa$$word'
+```
