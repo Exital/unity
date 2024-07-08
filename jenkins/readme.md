@@ -4,6 +4,7 @@
 - [Installing Jenkins on K8S using Helm](##Installing-Jenkins-on-Kubernetes-using-Helm)
 - [Configuring K8S Docker Agent](#Configuring-K8S-Docker-Agent)
 - [Configuring Kubernetes Credentials Provider](#Configuring-Kubernetes-Credentials-Provider)
+- [Configuring GitHub Webhooks as Jenkins Triggers](#Configuring-GitHub-Webhooks-as-Jenkins-Triggers)
 
 ## Installing [Jenkins](https://www.jenkins.io) on Kubernetes using Helm
 
@@ -411,10 +412,7 @@ spec:
 
 * Go to Manage Jenkins > System.
 * In the `Generic Webhook Trigger Whitelist` section, add the generated secret to the Shared secret field like so:
-
-
-
-
+![webhook_hmac_config_img](https://github.com/Exital/unity/blob/main/jenkins/img/generic-webhook-trigger-whitelist-hmac-config.png)
 
 
 
