@@ -321,3 +321,106 @@ pipeline {
     }
 }
 ```
+
+## Configuring GitHub Webhooks as Jenkins Triggers
+
+### Generate a Webhook Secret
+
+Since our Jenkins instance is exposed to the public internet, we need to secure the webhook-trigger mechanism between GitHub and Jenkins. Using a webhook secret ensures that the requests received by Jenkins are genuinely from GitHub and have not been tampered with.
+
+The HMAC (Hash-based Message Authentication Code) security feature provided by the Jenkins GitHub plugin is a powerful tool to achieve this. HMAC uses a shared secret between GitHub and Jenkins to sign each webhook payload. When Jenkins receives the payload, it uses the same secret to verify the signature. If the signatures match, Jenkins knows that the payload is authentic.
+
+To generate a 20-character long hexadecimal secret using OpenSSL, you can use the following command:
+
+```bash
+openssl rand -hex 20
+```
+This command generates a random 20-character long hex string, which you can use as your webhook secret. Here’s an example of the output:
+```bash
+b372760f9f78be211705332b7e5b2f6027e502f8
+```
+
+This secret should be added to your GitHub webhook configuration and your Jenkins GitHub plugin configuration to ensure secure communication.
+
+### Configuring the Webhook in GitHub
+
+**1. Navigate to your repository settings:**
+
+* Go to your GitHub repository
+* Click on Settings in the repository menu.
+
+**2. Create a new webhook:**
+
+* Select Webhooks from the left sidebar.
+* Click Add webhook.
+
+**3. Configure the webhook:**
+
+* Payload URL: Enter the URL of your Jenkins webhook endpoint (e.g., https://your-jenkins-url/generic-webhook-trigger/invoke?token=<token string>).
+The token is optional and is used to determine which pipeline should be triggered. You can choose any string for this token, but it must also be configured in the pipeline that it is intended to trigger (this will be explained in detail later).
+* Content type: Choose application/json.
+* Secret: Paste the generated secret from the openssl command here.
+* Which events would you like to trigger this webhook? Choose Let me select individual events and select the events you want to trigger the webhook, such as Pushes and Pull requests.
+
+**4. Save the webhook:**
+
+* Click Add webhook to save your settings.
+
+### Configuring Jenkins to Use the Webhook Secret
+
+**1. Install the Generic Webhook Trigger Plugin:**
+   - If you are following this documentation, the plugin is already installed through the Helm values.
+
+   ```yaml
+   controller:
+      installPlugins:
+        ....
+        - generic-webhook-trigger
+   ```
+
+**2. Create Jenkins Credential for the Webhook Token:**
+
+* You can create it manually by navigating to Manage Jenkins > Credentials.
+* Alternatively, you can create it automatically using a Kubernetes secret as explained in the Configuring [Kubernetes Credentials Provider](#Configuring-Kubernetes-Credentials-Provider) section.
+
+```yaml
+apiVersion: bitnami.com/v1alpha1
+kind: SealedSecret
+metadata:
+  creationTimestamp: null
+  name: github-webhook-secret
+  namespace: jenkins
+spec:
+  encryptedData:
+    text: AgBaWw2lCtH/ykpimXJonMM4B/99edQxvcfhRl83cOy9RopC7ze6R51jJcf7pUGpBRfxsKh6dzoArU8gWlSO+uZh+/R8PYUPxh7sPpd2thUNEwmd8kffeDz68117pWQtYgus1kKoRgkBR35XRteJ1LzoLessnmdyoi95sICGv+6QjNzfeHk7YzPuKT6AaKQ7g+1ABtqTourR9g/QX2ChgeFMmyJHVG5SoUzfQtdjUh4DkfplVvhAb6lufBDCDS4VUnJNCK9vnHZllLcNmew6dTEcRozkQ+9sFS7lr9mqbQaI5qJVcsVOlFnTfJ6mTDpByZCoE1od/jZUu6VyVaiWc+4uebPUZooBuEULZL//SFQFTMlNNjZ3FRTeFjKefGKlLZGbFq4TkvAGlxaQZ6CSXELkUzbeUhX0DNIFg1whOSmAdVsPjiojc5JLRgV4ttbr2PuuVQrdZFkqs1kc6Py5cWNVwN0tpkE7TWADwTcLLjB/CMe5qgE4FuBATVwh3HIQihAtcxB2OUu8ESBdHj0YRwnvgfByyGhbyvhIpbyLjgGmAqpyHNW5lXNv1c5A/PYscxAf8W3kl+XYZV3uxkbM+GyyX0zX8+aUDiPbiJBJYnuAhv1HdUFm0edGZGk+52SgaBITYoiCgadC0VJk+ZTuY68xD0bgI3hdzxf4ddCmlFJuOQxC3bgr80o3pYk2IXtCa03UNZWzoEkBC+G1wJPnT7SzJSlDma85rJSnDXn5L9iHxuF8ppXKr34F+SaJkeQy+UZHbeV1ocrcyjrmiWgryJ9b
+  template:
+    metadata:
+      annotations:
+        jenkins.io/credentials-description: Github WebHook HMAC secret for authentication
+      creationTimestamp: null
+      labels:
+        jenkins.io/credentials-type: secretText
+      name: github-webhook-secret
+      namespace: jenkins
+    type: Opaque
+```
+
+**3. Configure the GitHub Plugin:**
+
+**Manual Configuration:**
+
+* Go to Manage Jenkins > System.
+* In the `Generic Webhook Trigger Whitelist` section, add the generated secret to the Shared secret field like so:
+
+
+
+
+
+
+
+  
+Set up the job triggers:
+
+In your Jenkins job configuration, go to the Build Triggers section.
+Check the GitHub hook trigger for GITScm polling option.
+With these steps, your Jenkins instance is securely configured to receive and process GitHub webhooks using the HMAC security feature. This setup helps ensure that your webhook-trigger mechanism is secure and reliable.
