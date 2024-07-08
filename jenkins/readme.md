@@ -414,11 +414,38 @@ spec:
 * In the `Generic Webhook Trigger Whitelist` section, add the generated secret to the Shared secret field like so:
 ![webhook_hmac_config_img](https://github.com/Exital/unity/blob/main/jenkins/img/generic-webhook-trigger-whitelist-hmac-config.png)
 
+**Configuration as Code**
+* Add the following section to your Helm jenkins-values.yml file and then perform a Helm upgrade:
 
+```yaml
+controller:
+  JCasC:
+    enabled: true
+    configScripts:
+
+      ....
+  
+      configure-webhook-hmac-secret: |
+        unclassified:
+          whitelist:
+            enabled: true
+            whitelistItems:
+            - hmacAlgorithm: "HmacSHA256"
+              hmacCredentialId: "github-webhook-secret" # credential ID of the webhook secret
+              hmacEnabled: true
+              hmacHeader: "X-Hub-Signature-256"
+```
+
+Execute the Helm upgrade command:
+
+```bash
+helm upgrade <release-name> <chart-name> -f jenkins-values.yml
+```
 
   
-Set up the job triggers:
+### Set up the job triggers:
 
-In your Jenkins job configuration, go to the Build Triggers section.
-Check the GitHub hook trigger for GITScm polling option.
+<TBD>
+
+Check the GitHub hook trigger, by pushing new commit.
 With these steps, your Jenkins instance is securely configured to receive and process GitHub webhooks using the HMAC security feature. This setup helps ensure that your webhook-trigger mechanism is secure and reliable.
