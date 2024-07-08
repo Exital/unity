@@ -445,7 +445,31 @@ helm upgrade <release-name> <chart-name> -f jenkins-values.yml
   
 ### Set up the job triggers:
 
-**TBD**
+* Create a secret text credential to store the token for triggering the pipeline. You can use the Jenkins credential provider and apply a Kubernetes secret.
+* Configure a webhook trigger using DSL and assign the credential ID.
+
+```yaml
+pipelineJob('my_pipeline'){
+  properties {
+    pipelineTriggers {
+        triggers {
+          genericTrigger {
+              genericVariables {
+                  genericVariable {
+                      key("portfolio_branch")
+                      value("\$.ref")
+                  }
+              }
+              regexpFilterText("\$portfolio_branch")
+              regexpFilterExpression("^(refs\\/heads\\/(master|develop))*?\$")
+              printContributedVariables(true)
+              printPostContent(true)
+              tokenCredentialId('my_token_credential_id')
+          }
+      }
+    }
+  }
+```
 
 Check the GitHub hook trigger, by pushing new commit.
 With these steps, your Jenkins instance is securely configured to receive and process GitHub webhooks using the HMAC security feature. This setup helps ensure that your webhook-trigger mechanism is secure and reliable.
