@@ -24,6 +24,17 @@ controller:
         security:
           globalJobDslSecurityConfiguration:
             useScriptSecurity: false
+      
+      configure-webhook-hmac-secret: |
+        unclassified:
+          whitelist:
+            enabled: true
+            whitelistItems:
+            - hmacAlgorithm: "HmacSHA256"
+              hmacCredentialId: "github-webhook-secret"
+              hmacEnabled: true
+              hmacHeader: "X-Hub-Signature-256"
+
 
   ingress:
     enabled: true
