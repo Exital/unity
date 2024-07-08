@@ -472,4 +472,5 @@ pipelineJob('my_pipeline'){
 ```
 
 Check the GitHub hook trigger, by pushing new commit.
+
 With these steps, your Jenkins instance is securely configured to receive and process GitHub webhooks using the HMAC security feature. This setup helps ensure that your webhook-trigger mechanism is secure and reliable.
