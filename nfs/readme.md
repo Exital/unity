@@ -75,7 +75,7 @@ sudo apt update
 sudo apt install nfs-common
 ```
     
-2.  Create a mount point for the shared directory (e.g., `/mnt/nfs`):
+2.  Create a mount point for the shared directory (e.g., `/nfs`):
     
  ```bash
 sudo mkdir -p /nfs
