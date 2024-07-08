@@ -3,6 +3,7 @@
 ## Table of contents:
 - [Installing Jenkins on K8S using Helm](##Installing-Jenkins-on-Kubernetes-using-Helm)
 - [Configuring K8S Docker Agent](#Configuring-K8S-Docker-Agent)
+- [Configuring Kubernetes Credentials Provider](#Configuring-Kubernetes-Credentials-Provider)
 
 ## Installing [Jenkins](https://www.jenkins.io) on Kubernetes using Helm
 
@@ -303,4 +304,3 @@ stringData:
   username: myUsername
   password: 'Pa$$word'
 ```
-[Installing Jenkins on K8S using Helm](#Installing-Jenkins-on-Kubernetes-using-Helm)
