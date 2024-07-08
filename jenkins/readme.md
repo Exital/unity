@@ -357,7 +357,7 @@ This secret should be added to your GitHub webhook configuration and your Jenkin
 
 **3. Configure the webhook:**
 
-* Payload URL: Enter the URL of your Jenkins webhook endpoint (e.g., https://your-jenkins-url/generic-webhook-trigger/invoke?token=<token string>).
+* Payload URL: Enter the URL of your Jenkins webhook endpoint (e.g., https://your-jenkins-url/generic-webhook-trigger/invoke?token=my_token).
 The token is optional and is used to determine which pipeline should be triggered. You can choose any string for this token, but it must also be configured in the pipeline that it is intended to trigger (this will be explained in detail later).
 * Content type: Choose application/json.
 * Secret: Paste the generated secret from the openssl command here.
