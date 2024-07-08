@@ -281,7 +281,7 @@ rbac:
 ```
 
 
-### usage
+### Usage
 Once the Kubernetes Credentials Provider plugin is installed, you can create secrets in Kubernetes, and these will be automatically imported into Jenkins as credentials. You can use these credentials in your Jenkins jobs just like any other Jenkins credentials.
 You can find [additional examples](https://jenkinsci.github.io/kubernetes-credentials-provider-plugin/examples/) and detailed documentation on the plugin's [official documentation](https://jenkinsci.github.io/kubernetes-credentials-provider-plugin/) page and examples section.
 
@@ -303,4 +303,21 @@ type: Opaque
 stringData:
   username: myUsername
   password: 'Pa$$word'
+```
+
+Then it can be used in Jenkins pipelines just like any other credentials.
+```groovy
+pipeline {
+    agent any
+    stages {
+        stage('Use Credentials') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'another-test-usernamepass', usernameVariable: 'USER', passwordVariable: 'PASS')]) {
+                    sh 'echo $USER'
+                    sh 'echo $PASS'
+                }
+            }
+        }
+    }
+}
 ```
