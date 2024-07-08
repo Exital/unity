@@ -36,7 +36,7 @@ sudo chmod 755 /nfs
 Edit the `/etc/exports` file to configure the shared directory:
 
 ```bash
-sudo nano /etc/exports` 
+sudo nano /etc/exports
 ```
 
 Add the following line to share the directory with your client servers (replace `client_ip` with the actual IP addresses of your client servers):
@@ -61,7 +61,7 @@ Ensure the NFS service is started and enabled to start on boot:
 
 ```bash
 sudo systemctl start nfs-kernel-server
-sudo systemctl enable nfs-kernel-server` 
+sudo systemctl enable nfs-kernel-server
 ```
 
 ### 6. Configure NFS Clients
@@ -78,7 +78,7 @@ sudo apt install nfs-common
 2.  Create a mount point for the shared directory (e.g., `/mnt/nfs`):
     
  ```bash
-sudo mkdir -p /mnt/nfs
+sudo mkdir -p /nfs
 ```
     
 3.  Mount the NFS share:
