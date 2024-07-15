@@ -61,6 +61,7 @@ controller:
     - docker-workflow
     - generic-webhook-trigger
     - kubernetes-credentials-provider
+    - pipeline-utility-steps
 
   JCasC:
     enabled: true
