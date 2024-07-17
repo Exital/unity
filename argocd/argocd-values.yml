@@ -1,8 +1,9 @@
 global:
   domain: argocd.talrozen.com
 
-certificate:
-  enabled: true
+configs:
+  params:
+    server.insecure: true
 
 server:
   ingress:
@@ -10,5 +11,12 @@ server:
     ingressClassName: nginx
     annotations:
       nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
-      nginx.ingress.kubernetes.io/ssl-passthrough: "true"
+      nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
+    tls: true
+
+  ingressGrpc:
+    enabled: true
+    ingressClassName: nginx
+    annotations:
+      nginx.ingress.kubernetes.io/backend-protocol: "GRPC"
     tls: true
