@@ -125,10 +125,37 @@ Change the admin password using the UI and delete the `argocd-initial-admin-secr
 kubectl delete secret argocd-initial-admin-secret -n argocd
 ```
 
-## TBD: Section on Applications
+## Applications
 
-In this section, you will learn how to:
+To add a new application to ArgoCD, you need to apply an Application Custom Resource Definition (CRD).
 
-Create ArgoCD applications.
-Manage application life cycles.
-Sync and rollback applications.
+Here’s an example of how to configure a portfolio application using a GitOps repository with a Helm chart:
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: portfolio-prod # The name of the application in ArgoCD.
+  namespace: argocd
+spec:
+  # Specifies the Kubernetes cluster and namespace where the application will be deployed.
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: portfolio-prod
+  # Defines the source repository and path of the Helm chart, along with the target branch or revision.
+  source:
+    repoURL: 'https://github.com/Exital/portfolioGitOps.git'
+    path: 'portfolio-webapp'
+    targetRevision: 'master'
+
+    helm:
+      valueFiles:
+        - values-prod.yaml
+  
+  project: default
+  # Configures automatic synchronization with options for pruning and self-healing.
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+```
