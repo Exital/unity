@@ -4,6 +4,8 @@ global:
 configs:
   params:
     server.insecure: true
+  secret:
+    githubSecret: LXdlYmhvb2stc2VjcmV0OndlYmhvb2suZ2l0aHViLnNlY3JldA==
 
 server:
   ingress:
