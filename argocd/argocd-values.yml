@@ -5,7 +5,7 @@ configs:
   params:
     server.insecure: true
   secret:
-    githubSecret: LXdlYmhvb2stc2VjcmV0OndlYmhvb2suZ2l0aHViLnNlY3JldA==
+    githubSecret: $argocd-webhook-secret:webhook.github.secret
 
 server:
   ingress:
