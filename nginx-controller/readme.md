@@ -33,7 +33,7 @@ kubectl apply -f crds
 Install the NGINX Ingress Controller using Helm, specifying the chart directory and version:
 
 ```bash
-helm install nginx-ingress oci://ghcr.io/nginxinc/charts/nginx-ingress --version 1.2.2 --namespace nginx-ingress
+helm install nginx-ingress oci://ghcr.io/nginxinc/charts/nginx-ingress --version 1.2.2 --namespace nginx-ingress --set controller.service.externalTrafficPolicy=Cluster
 ```
 > Ensure to replace 1.2.2 with the desired version of the NGINX Ingress Controller.
 
