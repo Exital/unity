@@ -65,6 +65,15 @@ services:
       - net.ipv4.conf.all.src_valid_mark=1
 ```
 
+## 🚀 Start the WireGuard Easy Container
+
+Run the following command to start the container in the background:
+
+```bash
+docker compose up --detach
+```
+The `-d` (or `--detach`) flag runs the container in detached mode.
+
 ## 📌 Notes
 1. Use a domain from Cloudflare or another domain provider. If you're using Cloudflare, create a vpn CNAME (e.g., vpn.yourdomain.com) and **disable the proxy** (set it to "DNS only") so WireGuard can connect directly.
 2. On your home router, forward UDP traffic from the chosen port (default: 51820) to the local IP address of the machine running the WireGuard container.
