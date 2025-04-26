@@ -1,0 +1,116 @@
+---
+- name: Kubernetes Cluster Setup
+  hosts: masters
+  become: true
+  tasks:
+    - name: Check if Kubernetes is already initialized
+      stat:
+        path: /etc/kubernetes/admin.conf
+      register: kubeadm_conf
+
+    - name: Initialize Kubernetes Cluster (First Master Only)
+      command: kubeadm init --pod-network-cidr=10.10.0.0/16
+      when: not kubeadm_conf.stat.exists
+      run_once: true
+      register: kubeadm_init_output
+
+    - name: Extract Join Command
+      command: kubeadm token create --print-join-command
+      run_once: true
+      register: join_command
+      changed_when: false
+
+    - name: Set Join Command as Fact
+      set_fact:
+        k8s_join_command: "{{ join_command.stdout }}"
+      run_once: true
+
+    - name: Check if .kube directory exists
+      stat:
+        path: "/home/{{ ansible_user }}/.kube"
+      register: kube_dir
+
+    - name: Create .kube directory if not exists and set ownership
+      file:
+        path: "/home/{{ ansible_user }}/.kube"
+        state: directory
+        mode: '0700'
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+      when: kube_dir.stat.exists == false
+      run_once: true
+
+    - name: Check if the admin.conf file exists
+      stat:
+        path: /home/{{ ansible_user }}/.kube/config
+      register: admin_conf
+
+    - name: Copy Kubernetes admin config to .kube/config if not exists
+      copy:
+        src: /etc/kubernetes/admin.conf
+        dest: "/home/{{ ansible_user }}/.kube/config"
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: '0600'
+        remote_src: true
+      when: admin_conf.stat.exists == false
+      run_once: true
+
+    - name: Check if Calico Operator installed
+      command: kubectl get -f https://raw.githubusercontent.com/projectcalico/calico/v3.26.1/manifests/tigera-operator.yaml
+      environment:
+        KUBECONFIG: /home/{{ ansible_user }}/.kube/config
+      register: calico_operator_exists
+      ignore_errors: true
+      changed_when: false
+
+    - name: Install Calico Operator if not already installed
+      command: kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.26.1/manifests/tigera-operator.yaml
+      environment:
+        KUBECONFIG: /home/{{ ansible_user }}/.kube/config
+      when: calico_operator_exists.rc != 0
+
+    - name: Download custom-resources.yaml for Calico
+      command: curl https://raw.githubusercontent.com/projectcalico/calico/v3.26.1/manifests/custom-resources.yaml -O
+      when: calico_operator_exists.rc != 0
+
+    - name: Modify custom-resources.yaml to use a different CIDR
+      command: "sed -i 's/cidr: 192\\.168\\.0\\.0\\/16/cidr: 10.10.0\\.0\\/16/g' custom-resources.yaml"
+      when: calico_operator_exists.rc != 0
+
+    - name: Modify custom-resources.yaml to use a different CIDR
+      command: cat custom-resources.yaml
+      when: calico_operator_exists.rc != 0
+
+    - name: Apply custom-resources.yaml to configure Calico
+      command: kubectl create -f custom-resources.yaml
+      environment:
+        KUBECONFIG: /home/{{ ansible_user }}/.kube/config
+      when: calico_operator_exists.rc != 0
+
+    - name: read custom-resources.yaml after applying
+      command: cat custom-resources.yaml
+      when: calico_operator_exists.rc != 0
+      ignore_errors: true  # in case the file doesn't exist for some reason
+
+    - name: Delete custom-resources.yaml after applying
+      command: rm -f custom-resources.yaml
+      when: calico_operator_exists.rc != 0
+      ignore_errors: true  # in case the file doesn't exist for some reason
+
+- name: Join Worker Nodes
+  hosts: workers
+  become: true
+  tasks:
+    - name: Check if the worker node has already joined the cluster
+      stat:
+        path: /etc/kubernetes/kubelet.conf
+      register: kubelet_conf
+
+    - name: Join Workers to Kubernetes Cluster
+      command: "{{ hostvars[groups['masters'][0]]['k8s_join_command'] }}"
+      when: kubelet_conf.stat.exists == false and hostvars[groups['masters'][0]]['k8s_join_command'] is defined
+      register: join_worker_output
+      retries: 3
+      delay: 10
+      until: join_worker_output is success
