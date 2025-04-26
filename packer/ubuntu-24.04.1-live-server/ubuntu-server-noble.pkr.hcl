@@ -4,16 +4,22 @@
 
 
 # Variable Definitions
+# Your Proxmox IP Address
 variable "proxmox_api_url" {
     type = string
+    default = "https://192.168.0.110:8006/api2/json"
 }
 
+# API Token ID
 variable "proxmox_api_token_id" {
     type = string
+    default = "root@pam!a1"
 }
 
+# API Token Secret generated on Proxmox UI
 variable "proxmox_api_token_secret" {
     type = string
+    default = ""
     sensitive = true
 }
 
@@ -33,9 +39,9 @@ source "proxmox-iso" "ubuntu-server-noble" {
     insecure_skip_tls_verify = true
     
     # VM General Settings
-    node = "pve-rick" # Proxmox node name
-    vm_id = "201" # Not used VM ID for the packer to spin new VM
-    vm_name = "k8s-node-ubuntu-24.04" # Name of the VM that will be created
+    node = "pve-rick"
+    vm_id = "201"
+    vm_name = "k8s-node-ubuntu-24.04"
     template_description = "Ubuntu Server with k8s installed"
 
     # VM OS Settings
@@ -47,8 +53,8 @@ source "proxmox-iso" "ubuntu-server-noble" {
     # iso_checksum = "e240e4b801f7bb68c20d1356b60968ad0c33a41d00d828e74ceb3364a0317be9"
     # iso_storage_pool = "local"
     boot_iso {
-        # iso_url      = "https://releases.ubuntu.com/24.04/ubuntu-24.04.1-live-server-amd64.iso" # downloading ISO from url
-        iso_file = "local:iso/ubuntu-24.04.1-live-server-amd64.iso" # Using ISO file from local storage on proxmox
+        # iso_url      = "https://releases.ubuntu.com/24.04/ubuntu-24.04.1-live-server-amd64.iso"
+        iso_file = "local:iso/ubuntu-24.04.1-live-server-amd64.iso"
         iso_checksum = "sha256:e240e4b801f7bb68c20d1356b60968ad0c33a41d00d828e74ceb3364a0317be9"
         iso_storage_pool = "local"
     }
@@ -104,13 +110,13 @@ source "proxmox-iso" "ubuntu-server-noble" {
     # http_port_min           = 8802
     # http_port_max           = 8802
 
-    ssh_username            = "rozen" # SSH User
+    ssh_username            = "rozen"
 
     # (Option 1) Add your Password here
-    # ssh_password        = "my_cool_password"
+    # ssh_password        = "roma1927"
     # - or -
     # (Option 2) Add your Private SSH KEY file here
-    ssh_private_key_file    = "~/.ssh/id_rsa" # SSH Private key
+    ssh_private_key_file    = "~/.ssh/id_rsa"
 
     # Raise the timeout, when installation takes longer
     ssh_timeout             = "30m"
