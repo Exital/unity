@@ -113,7 +113,7 @@ source "proxmox-iso" "ubuntu-server-noble" {
     ssh_username            = "rozen"
 
     # (Option 1) Add your Password here
-    # ssh_password        = "roma1927"
+    # ssh_password        = "my_cool_passwd"
     # - or -
     # (Option 2) Add your Private SSH KEY file here
     ssh_private_key_file    = "~/.ssh/id_rsa"
