@@ -1,0 +1,33 @@
+#cloud-config
+autoinstall:
+  version: 1
+  locale: en_US
+  keyboard:
+    layout: us
+  ssh:
+    install-server: true
+    allow-pw: true
+    disable_root: true
+    ssh_quiet_keygen: true
+    allow_public_ssh_keys: true
+  packages:
+    - qemu-guest-agent
+    - sudo
+  storage:
+    layout:
+      name: direct
+    swap:
+      size: 0
+  user-data:
+    package_upgrade: false
+    timezone: Asia/Jerusalem
+    users:
+      - name: rozen # Username to be created on the template
+        groups: [adm, sudo]
+        lock-passwd: false
+        sudo: ALL=(ALL) NOPASSWD:ALL # Permissions of created user
+        shell: /bin/bash
+        # passwd: $6$J1tmWLyYt5tWLww9$gkT3ADrE3DcEw2OKd6DbLe3zgIGf.d3mnu5SMC4pXhIPM4jxAy0HOQ.AkXnk9mV1gqY3R/7F3Z.SeDtabsqYn1 # To hash the passwd use printf 'my_cool_passwd' | openssl passwd -6 -stdin
+        # - or -
+        ssh_authorized_keys:
+          - <Your public ssh key here>
