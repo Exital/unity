@@ -1,4 +1,13 @@
-# Cloudflare Dynamic DNS (DDNS) with Kubernetes CronJob
+# Cloudflare Dynamic DNS (DDNS)
+
+## Table of Contents
+- [Overview](#overview)
+- [Why DDNS with Cloudflare?](#why-ddns-with-cloudflare)
+- [Option 1: Kubernetes CronJob](#option-1-kubernetes-cronjob)
+  - [Kubernetes Objects Used](#kubernetes-objects-used)
+  - [Steps](#steps)
+- [Option 2: Standalone Bash Service (Systemd)](#option-2-standalone-bash-service-systemd)
+  - [Steps](#steps-1)
 
 ## Overview
 
@@ -8,15 +17,18 @@ Dynamic DNS (DDNS) is essential for scenarios where your external IP address cha
 ## Why DDNS with Cloudflare?
 Automation: Automatically update DNS records when your IP address changes, eliminating manual updates.
 High Availability: Ensure your services remain accessible with up-to-date DNS records.
-Security: Use Kubernetes secrets to securely store sensitive Cloudflare credentials.
-## Kubernetes Objects Used
+Security: Use secrets to securely store sensitive Cloudflare credentials.
+
+## Option 1: Kubernetes CronJob
+
+### Kubernetes Objects Used
 1. **Secrets:** Kubernetes secrets are used to store sensitive information such as Cloudflare credentials (auth_email, auth_key, etc.) securely.
 
 2. **ConfigMap:** A ConfigMap is used to store the bash script (ddns-update.py) that interacts with Cloudflare API and performs DNS updates.
 
 3. **CronJob:** The CronJob object is configured to run the ddns-update.sh script at specified intervals (schedule: "*/5 * * * *" in this example) to ensure DNS records are regularly updated.
 
-## steps:
+### steps:
 1. **Create cloudflare-ddns namespace**
 ```bash
 kubectl create namespace cloudflare-ddns
@@ -208,3 +220,169 @@ spec:
             configMap:
               name: ddns-update-script
 ```
+
+## Option 2: Standalone Bash Service (Systemd)
+
+### steps:
+1. **Create a secrets file (restricted access):**
+
+```bash
+sudo mkdir -p /etc/cloudflare-ddns
+sudo nano /etc/cloudflare-ddns/secret.env
+```
+
+Contents:
+```bash
+auth_email=<The email used to login 'https://dash.cloudflare.com'>
+auth_method=<Set to "global" for Global API Key or "token" for Scoped API Token>
+auth_key=<Your API Token or Global API Key>
+zone_identifier=<Can be found in the "Overview" tab of your domain>
+record_name=<Which record you want to be synced>
+ttl=<Set the DNS TTL (seconds)> # for example "3600"
+proxy=<Set the proxy to true or false> # use true
+```
+Set strict permissions:
+```bash
+sudo chmod 600 /etc/cloudflare-ddns/secret.env
+sudo chown root:root /etc/cloudflare-ddns/secret.env
+```
+2. **Create the cloudflare-ddns script:**
+```bash
+sudo nano /etc/cloudflare-ddns/cloudflare-ddns.sh
+```
+contents:
+```bash
+#!/bin/bash
+set -e
+
+# Load secrets
+source /etc/cloudflare-ddns/secret.env
+
+# Get public IP
+public_ip=$(curl -s https://cloudflare.com/cdn-cgi/trace | grep '^ip=' | cut -d= -f2)
+
+if [[ -z "$public_ip" ]]; then
+  public_ip=$(curl -s https://api.ipify.org || curl -s https://ipv4.icanhazip.com)
+fi
+
+# Check IP validity
+if [[ ! "$public_ip" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]; then
+  echo "Invalid IP: $public_ip"
+  exit 1
+fi
+
+# Auth header
+if [[ "$auth_method" == "global" ]]; then
+  auth_header="X-Auth-Key: $auth_key"
+else
+  auth_header="Authorization: Bearer $auth_key"
+fi
+
+# Get current record
+response=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones/$zone_identifier/dns_records?type=A&name=$record_name" \
+  -H "X-Auth-Email: $auth_email" \
+  -H "$auth_header" \
+  -H "Content-Type: application/json")
+
+old_ip=$(echo "$response" | jq -r '.result[0].content')
+record_id=$(echo "$response" | jq -r '.result[0].id')
+
+if [[ "$old_ip" == "$public_ip" ]]; then
+  echo "IP unchanged: $public_ip"
+  exit 0
+fi
+
+# Update IP
+update=$(curl -s -X PUT "https://api.cloudflare.com/client/v4/zones/$zone_identifier/dns_records/$record_id" \
+  -H "X-Auth-Email: $auth_email" \
+  -H "$auth_header" \
+  -H "Content-Type: application/json" \
+  --data "{\"type\":\"A\",\"name\":\"$record_name\",\"content\":\"$public_ip\",\"ttl\":$ttl,\"proxied\":$proxy}")
+
+echo "Updated IP from $old_ip to $public_ip"
+```
+3. **Copy the install script:**
+```bash
+nano /tmp/install_with_timer.sh
+```
+contents:
+```bash
+#!/bin/bash
+
+# External parameters passed to the script
+SCRIPT_NAME="$1"
+TIMER=${2:-"5min"}
+
+# Check if SCRIPT_NAME is provided
+if [ -z "$SCRIPT_NAME" ]; then
+  echo "Error: SCRIPT_NAME argument is required."
+  echo "Usage: $0 <SCRIPT_NAME> [TIMER]"
+  exit 1
+fi
+
+
+# Internal parameters
+SCRIPT_PATH="$(readlink -f "$1")"
+SCRIPT_NAME="$(basename "$SCRIPT_PATH")"  # Extract only the filename (e.g., monitor_pci.sh)
+SERVICE_NAME="${SCRIPT_NAME%.sh}"  # Remove the .sh extension
+LOCAL_SCRIPT_PATH="/usr/local/bin/$SERVICE_NAME.sh"
+
+SYSTEMD_DIR="/etc/systemd/system"
+
+# Display the parameters
+echo "SCRIPT_NAME: $SCRIPT_NAME"
+echo "SCRIPT_PATH: $SCRIPT_PATH"
+echo "SERVICE_NAME: $SERVICE_NAME"
+echo "LOCAL_SCRIPT_PATH: $LOCAL_SCRIPT_PATH"
+
+# Remove existing service and timer (if they exist)
+echo "Removing existing service and timer if they exist..."
+systemctl stop "${SERVICE_NAME}.service" 2>/dev/null
+systemctl stop "${SERVICE_NAME}.timer" 2>/dev/null
+systemctl disable "${SERVICE_NAME}.service" 2>/dev/null
+systemctl disable "${SERVICE_NAME}.timer" 2>/dev/null
+rm -f "${SYSTEMD_DIR}/${SERVICE_NAME}.service" "${SYSTEMD_DIR}/${SERVICE_NAME}.timer"
+
+# Copy the script to local path
+echo "Copying $SCRIPT_PATH to $LOCAL_SCRIPT_PATH"
+sudo cp "$SCRIPT_PATH" "$LOCAL_SCRIPT_PATH"
+sudo chmod +x "$LOCAL_SCRIPT_PATH"
+
+# Create systemd service file
+cat << EOF > "${SYSTEMD_DIR}/${SERVICE_NAME}.service"
+[Unit]
+Description=${SERVICE_NAME} service
+After=network.target
+
+[Service]
+ExecStart=$LOCAL_SCRIPT_PATH
+Restart=on-failure
+EOF
+
+# Create systemd timer file
+cat << EOF > "${SYSTEMD_DIR}/${SERVICE_NAME}.timer"
+[Unit]
+Description=Run check on ${SERVICE_NAME} status every ${TIMER}
+
+[Timer]
+OnBootSec=1min
+OnUnitActiveSec=${TIMER}
+Unit=${SERVICE_NAME}.service
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+echo "Reload systemd, enable and start the timer"
+systemctl daemon-reload
+systemctl enable "${SERVICE_NAME}.timer"
+systemctl start "${SERVICE_NAME}.timer"
+systemctl start "${SERVICE_NAME}.service"
+```
+Install the cloudflare-ddns service:
+```bash
+chmod +x /tmp/install_with_timer.sh
+sudo /tmp/install_with_timer.sh /etc/cloudflare-ddns/cloudflare-ddns.sh 1min
+```
+
+
